@@ -1,0 +1,47 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# Data / logs (não versionar arquivos grandes)
+logs/
+*.csv
+*.parquet
+*.feather
+*.db
+*.sqlite
+*.log
+
+# Virtual envs / secrets
+.env
+.env.*
+venv/
+env/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+
+# Build / dist
+build/
+dist/
+.eggs/
+
+# Test cache
+.pytest_cache/
+
+# IDE/editor
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Wheels
+*.whl
