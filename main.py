@@ -127,7 +127,7 @@ def main():
     print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
     #print(f'X_train info:\n {X_train.info()}')
     #Remove df desnecessário
-    del df
+    del df, X, y
     print(gc.collect())
     
     # Treinar o modelo
