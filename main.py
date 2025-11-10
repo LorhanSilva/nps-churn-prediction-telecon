@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import gc
 
 #Remover!
-PATH = "recl_tim_jan_2025.csv"
+PATH = 'logs\\recl_tim_20250110.csv'#"recl_tim_jan_2025.csv"
 
 def load_data(Path:str)->pd.DataFrame:
     df = pd.read_csv(Path, usecols=['tipo_assinante',
@@ -55,7 +55,7 @@ def load_data(Path:str)->pd.DataFrame:
         # Concatenate with the original DataFrame (excluding the original col)
         df = pd.concat([df.drop(col, axis=1), encoded_df], axis=1)
 
-    return df
+    return df.dropna()
 
 def wirte_data(rf, X_test, y_test)->None:
     y_pred = rf.predict(X_test)
@@ -139,7 +139,7 @@ def main():
     
     print("Calculando valores SHAP...")
     # Separa uma amostra (Isso reduz o tempo de processamento mantem uma boa fidelidade)
-    X_sample = X_train.sample(10000, random_state=42)
+    X_sample = X_train.sample(100, random_state=42)
     print(X_sample.info())
     
     #Shap
