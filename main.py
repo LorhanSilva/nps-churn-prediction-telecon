@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import gc
 
 #Remover!
-PATH = 'logs\\recl_tim_20250110.csv'#"recl_tim_jan_2025.csv"
+PATH = "recl_tim_jan_2025.csv"#'logs\\recl_tim_20250110.csv'
 
 def load_data(Path:str)->pd.DataFrame:
     df = pd.read_csv(Path, usecols=['tipo_assinante',
@@ -139,7 +139,7 @@ def main():
     
     print("Calculando valores SHAP...")
     # Separa uma amostra (Isso reduz o tempo de processamento mantem uma boa fidelidade)
-    X_sample = X_train.sample(100, random_state=42)
+    X_sample = X_train.sample(10000, random_state=42)
     print(X_sample.info())
     
     #Shap
