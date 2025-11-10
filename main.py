@@ -2,34 +2,48 @@ import pandas as pd
 import numpy as np
 import shap
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from datetime import datetime
 import matplotlib.pyplot as plt
+import gc
 
 #Remover!
-PATH = "recl_tim_jan_2025.csv"
+PATH = 'logs\\recl_tim_20250101.csv'#"recl_tim_jan_2025.csv"
 
 def load_data(Path:str)->pd.DataFrame:
-    df = pd.read_csv(Path)
-    # Excluir colunas irrelevantes (IDs, timestamps, etc.)
-    df.drop(columns=['msisdn_id', 'data_ref','tripleta','anatel_bloqueio_30_d',
-    'anatel_atendimento_30_d',
-    'anatel_instalacao_30_d',
-    'anatel_credito_30_d',
-    'anatel_planos_30_d',
-    'anatel_tecnico_30_d',
-    'anatel_cobranca_30_d',
-    'anatel_cancelamento_30_d',
-    'anatel_cadastro_30_d',
-    'anatel_portabilidade_30_d',
-    'anatel_ressarcimento_30_d'], inplace=True)
+    df = pd.read_csv(Path, usecols=['tipo_assinante',
+                                    'tipo_terminal',
+                                    'simcard_4g',
+                                    'mobile_4g',
+                                    'voz_4g',
+                                    'uso_voz',
+                                    'dados_4g_5g',
+                                    'uso_dados',
+                                    'dsc_origem',
+                                    'total_protocolos',
+                                    'ath', 
+                                'tripleta_tecnica',
+                                'flg_ressarcimento',
+                                'anatel_120_a',
+                                'anatel_bloqueio_120_a',
+                                'anatel_atendimento_120_a',
+                                'anatel_instalacao_120_a', 
+                                'anatel_credito_120_a',
+                                'anatel_planos_120_a',
+                                'anatel_tecnico_120_a',
+                                'anatel_cobranca_120_a',
+                                'anatel_cancelamento_120_a',
+                                'anatel_cadastro_120_a',
+                                'anatel_portabilidade_120_a',
+                                'anatel_ressarcimento_120_a',
+                                'anatel_30_d'])
     
     # One Hot encoding para variáveis categóricas ("Tripleta" ignorado por enquanto)
-    from sklearn.preprocessing import OneHotEncoder
-
     # final_df = df.copy()
-    encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+    #So cria novas colunas com mais de 1% de relevancia
+    encoder = OneHotEncoder(handle_unknown='infrequent_if_exist',min_frequency=0.01, sparse_output=False)
 
     for col in df.select_dtypes(['object']).columns:
         # Fit and transform the col
@@ -41,7 +55,6 @@ def load_data(Path:str)->pd.DataFrame:
         # Concatenate with the original DataFrame (excluding the original col)
         df = pd.concat([df.drop(col, axis=1), encoded_df], axis=1)
 
-    print(df.info())
     return df
 
 def wirte_data(rf, X_test, y_test)->None:
@@ -110,8 +123,12 @@ def main():
     X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
     )
+    
     print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
     #print(f'X_train info:\n {X_train.info()}')
+    #Remove df desnecessário
+    del df
+    print(gc.collect())
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
@@ -122,10 +139,11 @@ def main():
     
     print("Calculando valores SHAP...")
     # Separa uma amostra (Isso reduz o tempo de processamento mantem uma boa fidelidade)
-    X_sample = X_train.sample(10000, random_state=42)
+    X_sample = X_train.sample(100, random_state=42)
     print(X_sample.info())
     
-    #Shap    
+    #Shap
+    print("Executando shap")
     explainer = shap.TreeExplainer(rf)
     shap_values = explainer.shap_values(X_sample)
     
