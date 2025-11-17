@@ -4,7 +4,7 @@ import shap
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score
 from datetime import datetime
 import matplotlib.pyplot as plt
 import gc
@@ -39,7 +39,7 @@ def load_data(Path:str)->pd.DataFrame:
                                 'anatel_portabilidade_120_a',
                                 'anatel_ressarcimento_120_a',
                                 'anatel_30_d'])
-    
+    df["anatel_30_d"] = (df["anatel_30_d"] >= 1).astype(int) # transforma e de ocorrência binária 0 não 1 sim
     # One Hot encoding para variáveis categóricas ("Tripleta" ignorado por enquanto)
     # final_df = df.copy()
     #So cria novas colunas com mais de 1% de relevancia
@@ -61,12 +61,13 @@ def wirte_data(rf, X_test, y_test)->None:
     y_pred = rf.predict(X_test)
     #y_pred_prob = rf.predict_proba(X_test)[:, 1]
     print(y_pred.shape)
-
+    y_prob = rf.predict_proba(X_test)[:, 1]
     with open("Results.txt","r+", encoding='utf-8') as f:
         now_local = datetime.now()
         now_local_str = now_local.strftime("%Y-%m-%d %H:%M:%S")
         f.write('Acurácia:\n')
         f.write(f"{accuracy_score(y_test, y_pred)}")
+        f.write("\nROC-AUC:", roc_auc_score(y_test, y_prob))
         f.write('\nMatriz de confusão:\n')
         f.writelines([str(i) for i in confusion_matrix(y_test, y_pred)])
         f.write('\nRelatório de classificação:\n')
@@ -132,19 +133,25 @@ def main():
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
-    rf = RandomForestClassifier(random_state=42)
+    rf = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=15,
+        class_weight="balanced",
+        n_jobs=-1,
+        random_state=42
+    )
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
     
     print("Calculando valores SHAP...")
     # Separa uma amostra (Isso reduz o tempo de processamento mantem uma boa fidelidade)
-    X_sample = X_train.sample(10000, random_state=42)
+    X_sample = X_train.sample(500, random_state=42)
     print(X_sample.info())
     
     #Shap
     print("Executando shap")
-    explainer = shap.TreeExplainer(rf)
+    explainer = shap.TreeExplainer(rf, feature_perturbation="tree_path_dependent")
     shap_values = explainer.shap_values(X_sample)
     
     #Shap result    
