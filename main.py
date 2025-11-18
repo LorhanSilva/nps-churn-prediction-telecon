@@ -145,13 +145,7 @@ def main():
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
-    rf = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=15,
-        class_weight="balanced",
-        n_jobs=-1,
-        random_state=42
-    )
+    rf = RandomForestClassifier(random_state=42)
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
@@ -211,13 +205,14 @@ def main():
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
-    rf = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=15,
-        class_weight="balanced",
-        n_jobs=-1,
-        random_state=42
-    )
+    rf = RandomForestClassifier(random_state=42)
+    # rf = RandomForestClassifier(
+    #     n_estimators=300,
+    #     max_depth=15,
+    #     class_weight="balanced",
+    #     n_jobs=-1,
+    #     random_state=42
+    # )
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
