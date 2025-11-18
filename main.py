@@ -8,6 +8,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from datetime import datetime
 import matplotlib.pyplot as plt
 import gc
+import ctypes
 
 #Remover!
 PATH = "recl_tim_jan_2025.csv"#'logs\\recl_tim_20250110.csv'
@@ -116,6 +117,11 @@ def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
     top_features = df_global.head(top_k)["feature"].tolist()
     return df_global, df_per_class, top_features
 
+def free_memory():
+    lixo = gc.collect()
+    lixo2 = ctypes.CDLL("libc.so.6").malloc_trim(0)
+    return lixo, lixo2
+
 def main():
     df = load_data(PATH)
     # Separar features (X) e target (y)
@@ -123,7 +129,7 @@ def main():
     y = df['anatel_30_d']
     
     del df
-    lixo = gc.collect()
+    lixo = free_memory()
     print(f'garbage_colector: {lixo}')
     
     X_train, X_test, y_train, y_test = train_test_split(
@@ -134,7 +140,7 @@ def main():
     #print(f'X_train info:\n {X_train.info()}')
     #Remove df desnecessário
     del X, y
-    lixo = gc.collect()
+    lixo = free_memory()
     print(f'garbage_colector: {lixo}')
     
     # Treinar o modelo
@@ -177,7 +183,7 @@ def main():
     
     # Random forest com colunas do shap
     del X_train, X_test, y_train, y_test
-    lixo = gc.collect()
+    lixo = free_memory()
     print(f'garbage_colector: {lixo}')
     
     df = load_data(PATH)
@@ -189,7 +195,7 @@ def main():
     y = df['anatel_30_d']
     
     del df
-    lixo = gc.collect()
+    lixo = free_memory()
     print(f'garbage_colector: {lixo}')
     
     X_train, X_test, y_train, y_test = train_test_split(
@@ -200,7 +206,7 @@ def main():
     #print(f'X_train info:\n {X_train.info()}')
     #Remove df desnecessário
     del X, y
-    lixo = gc.collect()
+    lixo = free_memory()
     print(f'garbage_colector: {lixo}')
     
     # Treinar o modelo
