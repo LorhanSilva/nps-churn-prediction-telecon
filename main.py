@@ -173,7 +173,7 @@ def main():
         
     shap.summary_plot(shap_values, X_sample, show=False)
     plt.savefig('shap_summary.png', dpi=300, bbox_inches='tight')
-    plt.close()
+    plt.close('all')
     
     # Random forest com colunas do shap
     del X_train, X_test, y_train, y_test
