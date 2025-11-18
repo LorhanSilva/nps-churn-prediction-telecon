@@ -67,7 +67,8 @@ def wirte_data(rf, X_test, y_test)->None:
         now_local_str = now_local.strftime("%Y-%m-%d %H:%M:%S")
         f.write('Acurácia:\n')
         f.write(f"{accuracy_score(y_test, y_pred)}")
-        f.write("\nROC-AUC:", roc_auc_score(y_test, y_prob))
+        f.write("\nROC-AUC:")
+        f.write(f'{roc_auc_score(y_test, y_prob)}')
         f.write('\nMatriz de confusão:\n')
         f.writelines([str(i) for i in confusion_matrix(y_test, y_pred)])
         f.write('\nRelatório de classificação:\n')
@@ -121,6 +122,10 @@ def main():
     X = df.drop('anatel_30_d', axis=1)
     y = df['anatel_30_d']
     
+    del df
+    lixo = gc.collect()
+    print(f'garbage_colector: {lixo}')
+    
     X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
     )
@@ -128,8 +133,9 @@ def main():
     print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
     #print(f'X_train info:\n {X_train.info()}')
     #Remove df desnecessário
-    del df, X, y
-    print(gc.collect())
+    del X, y
+    lixo = gc.collect()
+    print(f'garbage_colector: {lixo}')
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
@@ -168,6 +174,47 @@ def main():
     shap.summary_plot(shap_values, X_sample, show=False)
     plt.savefig('shap_summary.png', dpi=300, bbox_inches='tight')
     plt.close()
+    
+    # Random forest com colunas do shap
+    del X_train, X_test, y_train, y_test
+    lixo = gc.collect()
+    print(f'garbage_colector: {lixo}')
+    
+    df = load_data(PATH)
+    #Seleciona as colunas do shap
+    df = df[top_features]
+    
+    # Separar features (X) e target (y)
+    X = df.drop('anatel_30_d', axis=1)
+    y = df['anatel_30_d']
+    
+    del df
+    lixo = gc.collect()
+    print(f'garbage_colector: {lixo}')
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
+    #print(f'X_train info:\n {X_train.info()}')
+    #Remove df desnecessário
+    del X, y
+    lixo = gc.collect()
+    print(f'garbage_colector: {lixo}')
+    
+    # Treinar o modelo
+    print("Treinando o modelo RandomForest...")
+    rf = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=15,
+        class_weight="balanced",
+        n_jobs=-1,
+        random_state=42
+    )
+    rf.fit(X_train, y_train)
+    
+    wirte_data(rf, X_test, y_test)
 
 if __name__ == "__main__":
     main()
