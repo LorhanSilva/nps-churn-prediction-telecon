@@ -60,21 +60,20 @@ def load_data(Path:str)->pd.DataFrame:
 
 def wirte_data(rf, X_test, y_test)->None:
     y_pred = rf.predict(X_test)
-    #y_pred_prob = rf.predict_proba(X_test)[:, 1]
-    print(y_pred.shape)
     y_prob = rf.predict_proba(X_test)[:, 1]
-    with open("Results.txt","r+", encoding='utf-8') as f:
-        now_local = datetime.now()
-        now_local_str = now_local.strftime("%Y-%m-%d %H:%M:%S")
-        f.write('Acurácia:\n')
-        f.write(f"{accuracy_score(y_test, y_pred)}")
-        f.write("\nROC-AUC:")
-        f.write(f'{roc_auc_score(y_test, y_prob)}')
-        f.write('\nMatriz de confusão:\n')
-        f.writelines([str(i) for i in confusion_matrix(y_test, y_pred)])
-        f.write('\nRelatório de classificação:\n')
-        f.writelines([str(i) for i in classification_report(y_test, y_pred)])
-        f.write('\n'+now_local_str+'\n')
+
+    now_local = datetime.now()
+    now_local_str = now_local.strftime("%Y-%m-%d %H:%M:%S")
+
+    with open("Results.txt", "a", encoding="utf-8") as f:  # "a" cria o arquivo se não existir e sempre escreve ao final
+        f.write("\n---- RESULTADO: " + now_local_str + " ----\n")
+        #f.write(f"Acurácia: {accuracy_score(y_test, y_pred):.6f}\n")
+        f.write(f"ROC-AUC: {roc_auc_score(y_test, y_prob):.6f}\n")
+        f.write("Matriz de confusão:\n")
+        f.write(np.array2string(confusion_matrix(y_test, y_pred)))
+        f.write("\nRelatório de classificação:\n")
+        f.write(classification_report(y_test, y_pred))
+        f.write("\n")
         
 def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
     # Normaliza formatos para arr shape = (n_samples, n_features, n_classes)
@@ -90,14 +89,12 @@ def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
             # detecta e corrige caso seja esse o caso
             n0, n1, n2 = arr.shape
             if n0 == X.shape[1] and n1 == X.shape[0]:
-                # improvável, mas checagem defensiva; reorganiza para (n_samples,n_features,n_classes)
                 arr = np.transpose(arr, (1,2,0))
-            # assume agora arr está ok: (n_samples, n_features, n_classes)
 
     n_samples, n_features, n_classes = arr.shape
     feat_names = list(X.columns)
 
-    importance_global = np.mean(arr, axis=(0,2))  # shape -> (n_features,)
+    importance_global = np.mean(arr, axis=(0,2))  
 
     df_global = pd.DataFrame({
         "feature": feat_names,
@@ -105,7 +102,7 @@ def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
     }).sort_values("importance", ascending=False).reset_index(drop=True)
 
     if per_class:
-        importance_per_class = np.mean(arr, axis=0)  # (n_features, n_classes)
+        importance_per_class = np.mean(arr, axis=0)  
         df_per_class = pd.DataFrame(
             importance_per_class,
             index=feat_names,
@@ -119,11 +116,15 @@ def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
 
 def free_memory():
     lixo = gc.collect()
-    lixo2 = ctypes.CDLL("libc.so.6").malloc_trim(0)
-    return lixo, lixo2
+    #lixo2 = ctypes.CDLL("libc.so.6").malloc_trim(0)
+    return lixo
 
 def main():
     df = load_data(PATH)
+    
+    #Separa uma amostra balanceada do dataset.
+    df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
+    print('balanced\t',df.anatel_30_d.value_counts())
     # Separar features (X) e target (y)
     X = df.drop('anatel_30_d', axis=1)
     y = df['anatel_30_d']
@@ -173,6 +174,8 @@ def main():
         
     shap.summary_plot(shap_values, X_sample, show=False)
     plt.savefig('shap_summary.png', dpi=300, bbox_inches='tight')
+    shap.summary_plot(shap_values, X_sample, plot_type='bar', show=False)
+    plt.savefig('summaty_bar.png', dpi=300, bbox_inches='tight')
     plt.close('all')
     
     # Random forest com colunas do shap
@@ -182,7 +185,11 @@ def main():
     
     df = load_data(PATH)
     #Seleciona as colunas do shap
+    top_features.append('anatel_30_d')
     df = df[top_features]
+    
+    #Separa uma amostra balanceada do dataset.
+    df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
     
     # Separar features (X) e target (y)
     X = df.drop('anatel_30_d', axis=1)
