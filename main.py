@@ -146,8 +146,8 @@ def main():
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
     rf = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=15,
+        # n_estimators=300,
+        # max_depth=15,
         class_weight="balanced",
         random_state=42
     )
@@ -214,8 +214,8 @@ def main():
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
     rf = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=15,
+        # n_estimators=300,
+        # max_depth=15,
         class_weight="balanced",
         random_state=42
     )
