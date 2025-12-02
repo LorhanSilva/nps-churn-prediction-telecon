@@ -4,7 +4,7 @@ import shap
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score
+from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score, precision_recall_curve
 from datetime import datetime
 import matplotlib.pyplot as plt
 import gc
@@ -85,8 +85,6 @@ def get_shap_top_features(shap_values, X, top_k=20, per_class=False):
             # (n_samples, n_features) -> adicionar uma "classe" única
             arr = arr[:, :, np.newaxis]
         elif arr.ndim == 3:
-            # formato (n_classes, n_samples, n_features)
-            # detecta e corrige caso seja esse o caso
             n0, n1, n2 = arr.shape
             if n0 == X.shape[1] and n1 == X.shape[0]:
                 arr = np.transpose(arr, (1,2,0))
@@ -123,8 +121,9 @@ def main():
     df = load_data(PATH)
     
     #Separa uma amostra balanceada do dataset.
-    df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
-    print('balanced\t',df.anatel_30_d.value_counts())
+    # df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
+    # print('balanced\t',df.anatel_30_d.value_counts())
+    
     # Separar features (X) e target (y)
     X = df.drop('anatel_30_d', axis=1)
     y = df['anatel_30_d']
@@ -134,7 +133,7 @@ def main():
     print(f'garbage_colector: {lixo}')
     
     X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+    X, y, test_size=0.25, random_state=42, stratify=y
     )
     
     print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
@@ -146,7 +145,12 @@ def main():
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
-    rf = RandomForestClassifier(random_state=42)
+    rf = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=15,
+        class_weight="balanced",
+        random_state=42
+    )
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
@@ -167,15 +171,12 @@ def main():
     print("Top features (SHAP):")
     print(top_features)
 
-    # Salvar em CSV se quiser
     df_global.to_csv("shap_feature_importance_global.csv", index=False)
     if df_per_class is not None:
         df_per_class.to_csv("shap_feature_importance_per_class.csv")
         
     shap.summary_plot(shap_values, X_sample, show=False)
     plt.savefig('shap_summary.png', dpi=300, bbox_inches='tight')
-    shap.summary_plot(shap_values, X_sample, plot_type='bar', show=False)
-    plt.savefig('summaty_bar.png', dpi=300, bbox_inches='tight')
     plt.close('all')
     
     # Random forest com colunas do shap
@@ -189,7 +190,7 @@ def main():
     df = df[top_features]
     
     #Separa uma amostra balanceada do dataset.
-    df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
+    #df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
     
     # Separar features (X) e target (y)
     X = df.drop('anatel_30_d', axis=1)
@@ -200,7 +201,7 @@ def main():
     print(f'garbage_colector: {lixo}')
     
     X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
+    X, y, test_size=0.25, random_state=42, stratify=y
     )
     
     print(f"Train shape: {X_train.shape}, Test shape: {X_test.shape}",f'\ntypes: {type(X)}|{type(X_train)}|{type(y_train)}')
@@ -212,14 +213,12 @@ def main():
     
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
-    rf = RandomForestClassifier(random_state=42)
-    # rf = RandomForestClassifier(
-    #     n_estimators=300,
-    #     max_depth=15,
-    #     class_weight="balanced",
-    #     n_jobs=-1,
-    #     random_state=42
-    # )
+    rf = RandomForestClassifier(
+        n_estimators=300,
+        max_depth=15,
+        class_weight="balanced",
+        random_state=42
+    )
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
