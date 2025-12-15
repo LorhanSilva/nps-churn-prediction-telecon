@@ -12,6 +12,7 @@ import ctypes
 
 #Remover!
 PATH = "recl_tim_jan_2025.csv"#'logs\\recl_tim_20250110.csv'
+TARGET_FEATURE = 'anatel_tecnico_30_d'
 
 def load_data(Path:str)->pd.DataFrame:
     df = pd.read_csv(Path, usecols=['tipo_assinante',
@@ -39,8 +40,8 @@ def load_data(Path:str)->pd.DataFrame:
                                 'anatel_cadastro_120_a',
                                 'anatel_portabilidade_120_a',
                                 'anatel_ressarcimento_120_a',
-                                'anatel_30_d'])
-    df["anatel_30_d"] = (df["anatel_30_d"] >= 1).astype(int) # transforma e de ocorrência binária 0 não 1 sim
+                                TARGET_FEATURE])
+    df[TARGET_FEATURE] = (df[TARGET_FEATURE] >= 1).astype(int) # transforma e de ocorrência binária 0 não 1 sim
     # One Hot encoding para variáveis categóricas ("Tripleta" ignorado por enquanto)
     # final_df = df.copy()
     #So cria novas colunas com mais de 1% de relevancia
@@ -117,6 +118,38 @@ def free_memory():
     #lixo2 = ctypes.CDLL("libc.so.6").malloc_trim(0)
     return lixo
 
+def grafico_threshold(rf,X_test,y_test):
+    """Gera gráfico de precisão e recall em função do limiar de decisão."""
+    y_prob = rf.predict_proba(X_test)[:, 1]
+    precision, recall, pr_thresholds = precision_recall_curve(y_test, y_prob)
+    # precision_recall_curve retorna arrays com len(thresholds)+1, usamos os primeiros len(thresholds) para emparelhar
+    prec = precision[:-1]
+    rec = recall[:-1]
+    thr = pr_thresholds
+
+    # F1 a partir de precision e recall (evita divisão por zero)
+    f1 = 2 * (prec * rec) / (prec + rec)
+    f1 = np.nan_to_num(f1)  # substitui NaN por 0
+    print(f"Thresholds calculados: {len(thr)}, Precision: {len(prec)}, Recall: {len(rec)}, F1: {len(f1)}")
+    # Accuracy para cada threshold
+    y_true = y_test.values
+    acc = [((y_prob >= t).astype(int) == y_true).mean() for t in thr]
+
+    # Plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(thr, prec, label="Precision", color="C0")
+    plt.plot(thr, rec, label="Recall", color="C1")
+    plt.plot(thr, f1, label="F1", color="C2")
+    #plt.plot(thr, acc, label="Accuracy", color="C3", linestyle="--")
+    plt.axvline(0.5, color="gray", linestyle=":", label="Threshold 0.5")
+    plt.xlabel("Threshold")
+    plt.ylabel("Score")
+    plt.title("Variação das métricas com o Threshold")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    #plt.show()
+    plt.savefig('Metrics_vs_Threshold.png')
+
 def main():
     df = load_data(PATH)
     
@@ -125,9 +158,9 @@ def main():
     # print('balanced\t',df.anatel_30_d.value_counts())
     
     # Separar features (X) e target (y)
-    X = df.drop('anatel_30_d', axis=1)
-    y = df['anatel_30_d']
-    
+    X = df.drop(TARGET_FEATURE, axis=1)
+    y = df[TARGET_FEATURE]
+
     del df
     lixo = free_memory()
     print(f'garbage_colector: {lixo}')
@@ -146,14 +179,17 @@ def main():
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
     rf = RandomForestClassifier(
-        # n_estimators=300,
-        # max_depth=15,
+        n_estimators=300,
+        max_depth=15,
         class_weight="balanced",
         random_state=42
     )
     rf.fit(X_train, y_train)
     
     wirte_data(rf, X_test, y_test)
+    
+    # Gráfico de threshold
+    grafico_threshold(rf, X_test, y_test)
     
     print("Calculando valores SHAP...")
     # Separa uma amostra (Isso reduz o tempo de processamento mantem uma boa fidelidade)
@@ -186,16 +222,16 @@ def main():
     
     df = load_data(PATH)
     #Seleciona as colunas do shap
-    top_features.append('anatel_30_d')
+    top_features.append(TARGET_FEATURE)
     df = df[top_features]
     
     #Separa uma amostra balanceada do dataset.
     #df = pd.concat([df[df.anatel_30_d == 0].sample(len(df[df.anatel_30_d == 1]), random_state=42), df[df.anatel_30_d == 1]])
     
     # Separar features (X) e target (y)
-    X = df.drop('anatel_30_d', axis=1)
-    y = df['anatel_30_d']
-    
+    X = df.drop(TARGET_FEATURE, axis=1)
+    y = df[TARGET_FEATURE]
+
     del df
     lixo = free_memory()
     print(f'garbage_colector: {lixo}')
@@ -214,8 +250,8 @@ def main():
     # Treinar o modelo
     print("Treinando o modelo RandomForest...")
     rf = RandomForestClassifier(
-        # n_estimators=300,
-        # max_depth=15,
+        n_estimators=300,
+        max_depth=15,
         class_weight="balanced",
         random_state=42
     )
